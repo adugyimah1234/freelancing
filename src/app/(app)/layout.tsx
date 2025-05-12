@@ -1,4 +1,3 @@
-
 "use client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppHeader } from "@/components/layout/app-header";
@@ -7,7 +6,7 @@ import { ImpersonationProvider, useImpersonation } from "@/context/impersonation
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LogOut, Loader2 } from "lucide-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react"; // Added useState
 import { useRouter } from "next/navigation";
 
 function ImpersonationBanner() {
@@ -31,28 +30,50 @@ function ImpersonationBanner() {
 
 
 function InnerAppLayout({ children }: { children: React.ReactNode }) {
-  const { isImpersonating, originalUser, isLoadingOriginalUser } = useImpersonation();
+  const { isImpersonating, originalUser, isLoadingOriginalUser, currentEffectiveUser } = useImpersonation();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    setIsClient(true); // Set to true once component mounts on client
+  }, []);
+
+  useEffect(() => {
+    if (isClient) { // Only run client-side logic after mount
       const token = localStorage.getItem('accessToken');
-      if (!token && !isLoadingOriginalUser) { // Redirect if no token and not currently loading user info
+      // If user loading is complete (isLoadingOriginalUser is false) AND there's no token, redirect.
+      if (!isLoadingOriginalUser && !token) {
         router.replace('/login');
       }
     }
-  }, [router, isLoadingOriginalUser]);
+  }, [isClient, isLoadingOriginalUser, router]);
 
-  if (isLoadingOriginalUser && typeof window !== 'undefined' && !localStorage.getItem('accessToken')) {
-      // If loading and no token, show a minimal loader or blank screen to avoid flashing content
-      // The useEffect above will handle redirection.
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      );
+  // Loader logic:
+  // Show loader if:
+  // 1. On the client (isClient is true)
+  // 2. AND ( EITHER initial user loading is still in progress (isLoadingOriginalUser is true)
+  //          OR no access token is found (implies user is not logged in, redirect is imminent via useEffect) )
+  if (isClient && (isLoadingOriginalUser || !localStorage.getItem('accessToken'))) {
+    // This loader is safe because `isClient` ensures it's only rendered after initial mount,
+    // matching server's behavior of not rendering this loader initially.
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
   
+  // If it's SSR (!isClient), or if client-side checks have passed (user loaded, token exists), render the main layout.
+  // Also, currentEffectiveUser should be populated if isLoadingOriginalUser is false and token exists.
+  // A further check could be added for `!currentEffectiveUser?.email` if needed for edge cases.
+  if (!isClient && isLoadingOriginalUser) {
+    // For SSR and initial client render before `isClient` is true,
+    // if `isLoadingOriginalUser` is true, we might render a minimal non-interactive layout shell
+    // or simply proceed to render the full layout structure as below.
+    // The key is that it must match. Proceeding to render the layout structure is often the simplest.
+  }
+
+
   const showBanner = isImpersonating && originalUser?.role?.name === 'Super Admin';
 
   return (
@@ -61,7 +82,7 @@ function InnerAppLayout({ children }: { children: React.ReactNode }) {
       <main 
         className={cn(
           "flex-1 flex flex-col min-h-screen peer-data-[state=collapsed]:peer-data-[collapsible=icon]:lg:ml-[var(--sidebar-width-icon)] lg:ml-[var(--sidebar-width)] transition-[margin-left] duration-300 ease-in-out",
-          { 'pt-12': showBanner } // Adjust main content padding if banner is shown
+          { 'pt-12': showBanner } 
         )}
       >
         <AppHeader />
