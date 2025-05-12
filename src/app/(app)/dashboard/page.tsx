@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MOCK_USER, MOCK_USERS, MOCK_BRANCHES } from "@/lib/constants";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, PieChart as RechartsPieChart, Bar, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltipComponent, Legend as RechartsLegendComponent, ResponsiveContainer } from "recharts";
-import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette } from "lucide-react";
+import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette, Settings2 } from "lucide-react";
 import Link from "next/link";
 
 // Mock data for charts
@@ -220,3 +220,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
