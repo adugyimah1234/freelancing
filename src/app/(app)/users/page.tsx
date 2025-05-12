@@ -27,7 +27,7 @@ const userFormSchema = z.object({
   name: z.string().min(3, "Full name must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
   role: z.string().min(1, "Role is required"),
-  branchId: z.string().optional(), // Keep optional, empty string will be converted to ALL_BRANCHES_SELECT_VALUE
+  branchId: z.string().optional(), 
   status: z.enum(["active", "inactive", "invited"]).default("invited"),
 });
 
@@ -50,7 +50,6 @@ export default function UserManagementPage() {
   const { toast } = useToast();
   
   const { originalUser, currentEffectiveUser, startImpersonation, isImpersonating } = useImpersonation();
-  // Use originalUser for permission checks related to modifying user data
   const adminUserForPermissions = originalUser;
 
 
@@ -117,6 +116,7 @@ export default function UserManagementPage() {
   
   const handleDeleteUser = async (userId: string) => {
     setIsLoading(true);
+    // Add a confirmation dialog here in a real app
     await new Promise(resolve => setTimeout(resolve, 500));
     setUsers(users.filter(u => u.id !== userId));
     setIsLoading(false);
@@ -136,13 +136,11 @@ export default function UserManagementPage() {
 
   return (
     <Card className="shadow-xl w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div>
           <CardTitle className="text-3xl">User Management</CardTitle>
           <CardDescription>View, create, and manage user accounts. {isImpersonating ? `(Currently viewing as ${currentEffectiveUser.name})` : `(Logged in as ${adminUserForPermissions.name})`}</CardDescription>
         </div>
-        {/* "Add New User" button visibility should be based on the original user's permissions if SA, or currentEffectiveUser's permissions if impersonating a non-SA */}
-        {/* For this exercise, we'll base it on originalUser's (Super Admin's) ability to create users always. */}
         {adminUserForPermissions.role === "Super Admin" && (
           <Dialog open={isUserDialogOpen} onOpenChange={(open) => { setIsUserDialogOpen(open); if (!open) setEditingUser(null); }}>
             <DialogTrigger asChild>
@@ -152,7 +150,7 @@ export default function UserManagementPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
+                <DialogTitle className="text-xl sm:text-2xl">{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
                 <DialogDescription>
                   {editingUser ? `Modify details for ${editingUser.name}.` : "Enter details to create/invite a new user."}
                 </DialogDescription>
@@ -173,7 +171,7 @@ export default function UserManagementPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="role" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Role</FormLabel>
@@ -234,79 +232,81 @@ export default function UserManagementPage() {
         )}
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12"></TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Login</TableHead>
-              <TableHead className="text-right w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id} className="hover:bg-muted/50">
-                <TableCell>
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="user avatar" />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                  </Avatar>
-                </TableCell>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{user.email}</TableCell>
-                <TableCell className="text-sm">{user.role}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {user.branchId ? MOCK_BRANCHES.find(b => b.id === user.branchId)?.name : 'All Branches'}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={user.status === "active" ? "default" : user.status === "invited" ? "secondary" : "outline"}
-                         className={user.status === "active" ? "bg-green-100 text-green-700 border-green-200" : 
-                                    user.status === "invited" ? "bg-blue-100 text-blue-700 border-blue-200" :
-                                    "bg-gray-100 text-gray-700 border-gray-200"}>
-                    {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {user.lastLogin ? format(parseISO(user.lastLogin), "dd MMM yyyy, HH:mm") : "Never"}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isLoading && !isImpersonating}>
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">User Actions</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && !isImpersonating && (
-                        <DropdownMenuItem onClick={() => startImpersonation(user)}>
-                          <Eye className="mr-2 h-4 w-4" /> View As User
+        <div className="relative w-full overflow-auto">
+            <Table>
+            <TableHeader>
+                <TableRow>
+                <TableHead className="w-12 p-2 sm:p-4"></TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="hidden md:table-cell">Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead className="hidden lg:table-cell">Branch</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden xl:table-cell">Last Login</TableHead>
+                <TableHead className="text-right w-[80px] sm:w-[100px] p-2 sm:p-4">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {users.map((user) => (
+                <TableRow key={user.id} className="hover:bg-muted/50">
+                    <TableCell className="p-2 sm:p-4">
+                    <Avatar className="h-9 w-9">
+                        <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="user avatar" />
+                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    </TableCell>
+                    <TableCell className="font-medium py-2 pr-2 sm:py-4 sm:pr-4">{user.name} <span className="block md:hidden text-xs text-muted-foreground">{user.email}</span></TableCell>
+                    <TableCell className="text-muted-foreground text-sm hidden md:table-cell">{user.email}</TableCell>
+                    <TableCell className="text-sm">{user.role}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground hidden lg:table-cell">
+                    {user.branchId ? MOCK_BRANCHES.find(b => b.id === user.branchId)?.name : 'All Branches'}
+                    </TableCell>
+                    <TableCell>
+                    <Badge variant={user.status === "active" ? "default" : user.status === "invited" ? "secondary" : "outline"}
+                            className={`${user.status === "active" ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200" : 
+                                        user.status === "invited" ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200" :
+                                        "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200"} text-xs whitespace-nowrap`}>
+                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                    </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground hidden xl:table-cell">
+                    {user.lastLogin ? format(parseISO(user.lastLogin), "dd MMM yyyy, HH:mm") : "Never"}
+                    </TableCell>
+                    <TableCell className="text-right p-1 sm:p-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isLoading && !isImpersonating}>
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">User Actions</span>
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                        {adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && !isImpersonating && (
+                            <DropdownMenuItem onClick={() => startImpersonation(user)}>
+                            <Eye className="mr-2 h-4 w-4" /> View As User
+                            </DropdownMenuItem>
+                        )}
+                        {(adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && !isImpersonating) && <DropdownMenuSeparator />}
+                        <DropdownMenuItem onClick={() => handleEdit(user)} disabled={isLoading && isImpersonating}>
+                            <Edit3 className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
-                      )}
-                       {(adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && !isImpersonating) && <DropdownMenuSeparator />}
-                      <DropdownMenuItem onClick={() => handleEdit(user)} disabled={isLoading && isImpersonating}>
-                        <Edit3 className="mr-2 h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleToggleStatus(user)} disabled={isLoading && isImpersonating}>
-                        <Power className="mr-2 h-4 w-4" /> 
-                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                      </DropdownMenuItem>
-                       {adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && ( 
-                        <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={isLoading && isImpersonating}>
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        <DropdownMenuItem onClick={() => handleToggleStatus(user)} disabled={isLoading && isImpersonating}>
+                            <Power className="mr-2 h-4 w-4" /> 
+                            {user.status === 'active' ? 'Deactivate' : 'Activate'}
                         </DropdownMenuItem>
-                       )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                        {adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && ( 
+                            <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={isLoading && isImpersonating}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                        )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    </TableCell>
+                </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </div>
          {users.length === 0 && (
           <div className="text-center py-10 text-muted-foreground">
             No users found. Start by adding a new user.

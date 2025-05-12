@@ -4,10 +4,10 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MOCK_USERS, MOCK_BRANCHES } from "@/lib/constants"; // MOCK_USER removed, using context
+import { MOCK_USERS, MOCK_BRANCHES } from "@/lib/constants"; 
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, PieChart as RechartsPieChart, Bar, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltipComponent, Legend as RechartsLegendComponent, ResponsiveContainer } from "recharts";
-import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette, Settings } from "lucide-react"; // Settings2 changed to Settings
+import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette, Settings } from "lucide-react";
 import Link from "next/link";
 import { useImpersonation } from "@/context/impersonation-context";
 
@@ -42,14 +42,14 @@ export default function DashboardPage() {
   const userRole = currentEffectiveUser.role;
 
   const kpis = [
-    { title: "Total Students", value: "1,250", icon: UsersRound, trend: "+5% MoM", color: "text-blue-500", bgColor: "bg-blue-50" },
-    { title: "Active Staff", value: MOCK_USERS.length.toString(), icon: Users, trend: "+2 this week", color: "text-green-500", bgColor: "bg-green-50" },
-    { title: "Total Revenue", value: "$85,670", icon: DollarSign, trend: "+12% MoM", color: "text-purple-500", bgColor: "bg-purple-50" },
-    { title: "Open Enquiries", value: "78", icon: Activity, trend: "+10 today", color: "text-orange-500", bgColor: "bg-orange-50" },
+    { title: "Total Students", value: "1,250", icon: UsersRound, trend: "+5% MoM", color: "text-primary" },
+    { title: "Active Staff", value: MOCK_USERS.length.toString(), icon: Users, trend: "+2 this week", color: "text-green-600" },
+    { title: "Total Revenue", value: "$85,670", icon: DollarSign, trend: "+12% MoM", color: "text-purple-600" },
+    { title: "Open Enquiries", value: "78", icon: Activity, trend: "+10 today", color: "text-orange-600" },
   ];
 
-  const chartConfig: any = { // Using any for chartConfig for simplicity with dynamic keys
-    newStudents: { label: "New Students", color: "hsl(var(--chart-1))" },
+  const chartConfig: any = { 
+    newStudents: { label: "New Students", color: "hsl(var(--primary))" },
     revenue: { label: "Revenue" }
   };
   MOCK_BRANCHES.forEach((branch, index) => {
@@ -68,7 +68,6 @@ export default function DashboardPage() {
           <Button variant="outline" size="sm">
             <TrendingUp className="mr-2 h-4 w-4" /> View Reports
           </Button>
-          {/* Button visibility based on currentEffectiveUser's role/permissions */}
           {userRole === "Super Admin" && (
             <Button size="sm" asChild>
               <Link href="/users/new">
@@ -82,7 +81,7 @@ export default function DashboardPage() {
       {/* KPIs Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
-          <Card key={kpi.title} className={`shadow-md hover:shadow-lg transition-shadow ${kpi.bgColor}`}>
+          <Card key={kpi.title} className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.title}</CardTitle>
               <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
@@ -128,33 +127,34 @@ export default function DashboardPage() {
               <CardDescription>Latest actions performed by users across the platform.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead className="text-right">Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentActivity.map((activity) => (
-                    <TableRow key={activity.id} className="hover:bg-muted/50">
-                      <TableCell>{activity.icon}</TableCell>
-                      <TableCell className="font-medium">{activity.user}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{activity.action}</TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">{activity.time}</TableCell>
+              <div className="relative w-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead className="text-right">Time</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {recentActivity.map((activity) => (
+                      <TableRow key={activity.id} className="hover:bg-muted/50">
+                        <TableCell>{activity.icon}</TableCell>
+                        <TableCell className="font-medium">{activity.user}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{activity.action}</TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">{activity.time}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Right Column (Smaller) */}
         <div className="space-y-6">
-          {/* Revenue by branch chart visibility based on currentEffectiveUser's role */}
           {userRole === "Super Admin" && (
             <Card className="shadow-lg">
               <CardHeader>
@@ -199,8 +199,7 @@ export default function DashboardPage() {
               <CardTitle className="text-xl">Quick Actions</CardTitle>
               <CardDescription>Common tasks at your fingertips.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2">
-              {/* Quick Actions could also be permission-based */}
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button variant="outline" className="w-full" asChild><Link href="/students/new"><UserPlus className="mr-2 h-4 w-4" />Student</Link></Button>
               <Button variant="outline" className="w-full" asChild><Link href="/staff/new"><Users className="mr-2 h-4 w-4" />Staff</Link></Button>
               <Button variant="outline" className="w-full" asChild><Link href="/classes"><BookOpen className="mr-2 h-4 w-4" />Classes</Link></Button>
@@ -208,13 +207,13 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg bg-yellow-50 border-yellow-200">
+          <Card className="shadow-lg bg-accent/10 border-accent/30">
             <CardHeader>
-              <CardTitle className="text-xl text-yellow-700 flex items-center"><AlertCircle className="mr-2 h-5 w-5" />System Alerts</CardTitle>
-              <CardDescription className="text-yellow-600">Important notices and pending actions.</CardDescription>
+              <CardTitle className="text-xl text-accent-foreground flex items-center"><AlertCircle className="mr-2 h-5 w-5" />System Alerts</CardTitle>
+              <CardDescription className="text-accent-foreground/80">Important notices and pending actions.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2 text-sm text-yellow-700">
+              <ul className="space-y-2 text-sm text-accent-foreground/90">
                 <li className="flex items-start"><Bell className="h-4 w-4 mr-2 mt-0.5 shrink-0" /> <strong>Fee Deadline Approaching:</strong> Class 12 fees due in 3 days.</li>
                 <li className="flex items-start"><Palette className="h-4 w-4 mr-2 mt-0.5 shrink-0" /> <strong>Branding Update:</strong> New logo guidelines available in Branch Settings.</li>
               </ul>

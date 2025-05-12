@@ -19,10 +19,10 @@ const currentBranchData = {
   address: "123 Education Lane, Knowledgetown, ED 45678",
   phone: "+1 (555) 123-4567",
   email: "maincampus@branchbuddy.app",
-  logoUrl: "https://picsum.photos/seed/maincampuslogo/200/100", // Placeholder
+  logoUrl: "https://picsum.photos/seed/maincampuslogo/200/100", 
   classes: ["Nursery", "LKG", "UKG", "Class 1", "Class 2"],
-  primaryColor: "#3498db", // hsl(207, 70%, 53%)
-  secondaryColor: "#ecf0f1", // hsl(210, 17%, 96%)
+  primaryColor: "#3b82f6", // Updated to a more modern blue from palette
+  secondaryColor: "#e5e7eb", // Updated to a lighter gray
 };
 
 export default function BranchSettingsPage() {
@@ -79,17 +79,14 @@ export default function BranchSettingsPage() {
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
-    // In a real app, this would submit data to the backend, including logoFile if present
     console.log("Saving changes:", { branchName, address, phone, email, logoFile, logoPreview, selectedClasses, primaryColor, secondaryColor });
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     setIsSaving(false);
     toast({
       title: "Settings Saved!",
       description: "Branch settings have been updated successfully.",
-      variant: "default",
     });
   };
 
@@ -99,7 +96,7 @@ export default function BranchSettingsPage() {
         <CardTitle className="text-3xl">Branch Settings</CardTitle>
         <CardDescription>Configure settings specific to the current branch: {currentBranchData.name}.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6">
             <TabsTrigger value="general">General Information</TabsTrigger>
@@ -146,18 +143,18 @@ export default function BranchSettingsPage() {
                 <div>
                   <Label className="text-base font-medium">Current Classes</Label>
                   {selectedClasses.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 mt-2 border p-3 rounded-md bg-muted/30">
+                    <div className="flex flex-wrap gap-2 mt-2 border p-3 rounded-md bg-muted/50">
                       {selectedClasses.map((cls) => (
-                        <div key={cls} className="flex items-center bg-primary/10 text-primary px-3 py-1.5 rounded-md text-sm font-medium border border-primary/30">
-                          {cls}
-                          <Button variant="ghost" size="icon" className="h-5 w-5 ml-2 hover:bg-primary/20" onClick={() => handleRemoveClass(cls)}>
+                        <div key={cls} className="flex items-center bg-primary/10 text-primary-foreground px-3 py-1.5 rounded-md text-sm font-medium border border-primary/30">
+                          <span className="text-primary">{cls}</span>
+                          <Button variant="ghost" size="icon" className="h-5 w-5 ml-2 text-primary hover:bg-primary/20" onClick={() => handleRemoveClass(cls)}>
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground mt-2 p-3 border rounded-md bg-muted/30">No classes added yet. Use the form below to add classes.</p>
+                    <p className="text-sm text-muted-foreground mt-2 p-3 border rounded-md bg-muted/50">No classes added yet. Use the form below to add classes.</p>
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-end gap-4 pt-4 border-t">
@@ -201,10 +198,10 @@ export default function BranchSettingsPage() {
               <CardContent className="space-y-8">
                 <div className="space-y-3">
                   <Label htmlFor="logoUpload" className="text-base font-medium">Branch Logo</Label>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-4">
                     {logoPreview ? (
                       <div className="relative w-40 h-20 border-2 border-dashed rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                        <Image src={logoPreview} alt="Branch Logo Preview" layout="fill" objectFit="contain" data-ai-hint="school logo" />
+                        <Image src={logoPreview} alt="Branch Logo Preview" layout="fill" objectFit="contain" data-ai-hint="school logo"/>
                       </div>
                     ) : (
                        <div className="w-40 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-muted text-muted-foreground">
@@ -233,7 +230,7 @@ export default function BranchSettingsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="primaryColor">Primary Theme Color</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="primaryColor" type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-10 w-16 p-1 rounded-md" />
+                        <Input id="primaryColor" type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-10 w-16 p-1 rounded-md border-input" />
                         <Input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="#RRGGBB" className="flex-1" />
                     </div>
                     <p className="text-xs text-muted-foreground">Used for main buttons, highlights, and active states.</p>
@@ -241,7 +238,7 @@ export default function BranchSettingsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="secondaryColor">Secondary Theme Color</Label>
                      <div className="flex items-center gap-2">
-                        <Input id="secondaryColor" type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-10 w-16 p-1 rounded-md" />
+                        <Input id="secondaryColor" type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-10 w-16 p-1 rounded-md border-input" />
                         <Input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} placeholder="#RRGGBB" className="flex-1" />
                     </div>
                     <p className="text-xs text-muted-foreground">Used for backgrounds, accents, and secondary elements.</p>
