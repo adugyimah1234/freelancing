@@ -1,4 +1,4 @@
-import type { Role, Permission, Branch, User } from "@/types";
+import type { Permission } from "@/types"; // Removed Role, Branch, User imports
 
 export const MOCK_PERMISSIONS: Permission[] = [
   // Student Management
@@ -23,109 +23,8 @@ export const MOCK_PERMISSIONS: Permission[] = [
   { id: "perm_exam_manage", name: "Manage Examinations", category: "Academic Management" },
 ];
 
-export const MOCK_ROLES: Role[] = [
-  {
-    id: "role_super_admin",
-    name: "Super Admin",
-    description: "Has all permissions across all branches.",
-    permissions: MOCK_PERMISSIONS.map(p => p.id),
-    userCount: 1,
-  },
-  {
-    id: "role_branch_admin",
-    name: "Branch Admin",
-    description: "Manages a specific branch.",
-    permissions: [
-      "perm_student_create", "perm_student_view", "perm_student_edit",
-      "perm_fee_collect", "perm_fee_view_records",
-      "perm_user_create", "perm_user_view", "perm_user_edit", "perm_user_assign_roles", // Within their branch
-      "perm_branch_config", // For their branch
-      "perm_class_manage", "perm_exam_manage"
-    ],
-    userCount: 3,
-  },
-  {
-    id: "role_front_desk",
-    name: "Front Desk",
-    description: "Handles student registrations and inquiries.",
-    permissions: ["perm_student_create", "perm_student_view", "perm_fee_collect"],
-    userCount: 5,
-  },
-  {
-    id: "role_accountant",
-    name: "Accountant",
-    description: "Manages fee collections and financial records.",
-    permissions: ["perm_fee_collect", "perm_fee_view_records", "perm_fee_manage_structure"],
-    userCount: 2,
-  },
-  {
-    id: "role_teacher",
-    name: "Teacher",
-    description: "Manages assigned classes and student progress.",
-    permissions: ["perm_student_view", "perm_exam_manage"], // Simplified
-    userCount: 10,
-  },
-];
-
-export const MOCK_BRANCHES: Branch[] = [
-  { id: "branch_main", name: "Main Campus" },
-  { id: "branch_north", name: "North Campus" },
-  { id: "branch_downtown", name: "Downtown Branch" },
-];
-
-export const MOCK_USERS: User[] = [
-  {
-    id: "user_super_admin",
-    name: "Dr. Evelyn Reed",
-    email: "e.reed@branchbuddy.app",
-    avatarUrl: "https://picsum.photos/seed/evelyn/100/100",
-    role: "Super Admin",
-    status: "active",
-    lastLogin: "2024-07-15T10:30:00.000Z",
-  },
-  {
-    id: "user_branch_admin_main",
-    name: "Marcus Chen",
-    email: "m.chen.main@branchbuddy.app",
-    avatarUrl: "https://picsum.photos/seed/marcus/100/100",
-    role: "Branch Admin",
-    status: "active",
-    branchId: "branch_main",
-    lastLogin: "2024-07-20T14:45:12.000Z",
-  },
-  {
-    id: "user_front_desk_north",
-    name: "Aisha Khan",
-    email: "a.khan.north@branchbuddy.app",
-    avatarUrl: "httpsum.photos/seed/aisha/100/100",
-    role: "Front Desk",
-    status: "active",
-    branchId: "branch_north",
-    lastLogin: "2024-07-21T09:15:30.000Z",
-  },
-  {
-    id: "user_accountant_main",
-    name: "John B. Good",
-    email: "j.good.main@branchbuddy.app",
-    avatarUrl: "httpsum.photos/seed/johngood/100/100",
-    role: "Accountant",
-    status: "invited",
-    branchId: "branch_main",
-    // No lastLogin for invited users
-  },
-   {
-    id: "user_teacher_downtown",
-    name: "Sarah Wilson",
-    email: "s.wilson.downtown@branchbuddy.app",
-    avatarUrl: "httpsum.photos/seed/sarah/100/100",
-    role: "Teacher", 
-    status: "inactive",
-    branchId: "branch_downtown",
-    lastLogin: "2024-06-10T17:00:05.000Z",
-  },
-];
-
-export const MOCK_USER: User = MOCK_USERS[0]; // Super Admin for current session
+// MOCK_ROLES, MOCK_BRANCHES, MOCK_USERS, MOCK_USER are removed.
+// Data will be fetched from API.
 
 export const MOCK_CLASSES: string[] = [
   "Nursery", "LKG", "UKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5",

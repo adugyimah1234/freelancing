@@ -10,31 +10,37 @@ export type NavItem = {
 };
 
 export type Permission = {
-  id: string;
+  id: string; // Usually string (UUID or slug) or number
   name: string;
   category: string;
 };
 
 export type Role = {
-  id: string;
+  id: string; // Backend uses string UUIDs for Role IDs in DTOs/Entities
   name: string;
-  description: string;
-  permissions: string[]; // Array of permission IDs
-  userCount?: number; // Optional: for display purposes
+  description?: string;
+  permissions?: Permission[] | string[]; // Can be full objects or just IDs
+  userCount?: number; 
 };
 
 export type Branch = {
-  id: string;
+  id: string; // Backend uses string UUIDs for Branch IDs
   name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  // Add other fields if needed
 };
 
 export type User = {
-  id: string;
+  id: number; // Backend UserEntity typically has a numeric auto-increment ID
   name: string;
   email: string;
-  avatarUrl?: string;
-  role: string; // Role Name
-  status: 'active' | 'invited' | 'inactive';
-  branchId?: string; // Optional, for users assigned to a specific branch
-  lastLogin?: string; // ISO date string, for display
+  avatarUrl?: string; // Remains optional, backend might not provide it initially
+  role: Role; // Changed from string to Role object to reflect backend relations
+  status: 'active' | 'invited' | 'inactive' | 'pending'; // Added 'pending' from backend UserStatus enum
+  branch?: Branch; // Changed from branchId to Branch object
+  lastLogin?: string | null; // ISO date string, or null
+  createdAt?: string; // ISO date string
+  updatedAt?: string; // ISO date string
 };

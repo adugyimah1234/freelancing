@@ -1,3 +1,4 @@
+// src/app/login/page.tsx
 "use client";
 
 import * as React from "react";
@@ -15,7 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Briefcase, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
+import { authService, ApiError } from "@/lib/apiService";
+import type { User } from "@/types";
 
 export default function LoginPage() {
   const [email, setEmail] = React.useState("");
@@ -28,27 +31,37 @@ export default function LoginPage() {
     event.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call for login
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const { accessToken } = await authService.login({ email, password });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("accessToken", accessToken);
+      }
+      
+      // Fetch user profile after successful login
+      const userProfile = await authService.getProfile();
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("originalUser", JSON.stringify(userProfile)); // Store the actual logged-in user
+      }
 
-    // Basic validation for demo purposes
-    // In a real app, you'd call your auth API here
-    if (email === "admin@branchbuddy.app" && password === "password") {
       toast({
         title: "Login Successful",
         description: "Welcome back! Redirecting to dashboard...",
       });
-      // Redirect to dashboard after successful login
-      router.push("/dashboard"); 
-    } else {
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Login failed:", error);
+      let errorMessage = "Invalid email or password. Please try again.";
+      if (error instanceof ApiError) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsLoading(false);
     }
-    // Do not set isLoading to false here if redirecting, to avoid brief flicker
+    // Don't set isLoading to false here if redirecting successfully, to avoid brief flicker
   };
 
   return (

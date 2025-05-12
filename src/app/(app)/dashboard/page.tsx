@@ -4,12 +4,16 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MOCK_USERS, MOCK_BRANCHES } from "@/lib/constants"; 
+// MOCK_USERS is removed from constants, so we need to handle this.
+// For now, we'll use a limited placeholder or fetch if possible.
+// MOCK_BRANCHES is also removed.
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, PieChart as RechartsPieChart, Bar, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltipComponent, Legend as RechartsLegendComponent, ResponsiveContainer } from "recharts";
-import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette, Settings } from "lucide-react";
+import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette, Settings, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useImpersonation } from "@/context/impersonation-context";
+import type { Branch, User } from "@/types";
+import { apiService } from "@/lib/apiService";
 
 // Mock data for charts
 const enrollmentData = [
@@ -22,38 +26,84 @@ const enrollmentData = [
   { month: "Jul", newStudents: 75 },
 ];
 
-const revenueData = MOCK_BRANCHES.map((branch, index) => ({
-  name: branch.name,
-  revenue: Math.floor(Math.random() * 50000) + 20000,
-  fill: `hsl(var(--chart-${index + 1}))`,
-}));
+const placeholderRevenueData = [
+    { name: "Branch A", revenue: 35000, fill: "hsl(var(--chart-1))" },
+    { name: "Branch B", revenue: 42000, fill: "hsl(var(--chart-2))" },
+    { name: "Branch C", revenue: 28000, fill: "hsl(var(--chart-3))" },
+];
 
 
-const recentActivity = [
-  { id: "1", user: MOCK_USERS[1 % MOCK_USERS.length]?.name || "User 1", action: "Added new student 'Alice Wonderland'", time: "15m ago", icon: <UserPlus className="h-4 w-4 text-green-500" /> },
-  { id: "2", user: MOCK_USERS[2 % MOCK_USERS.length]?.name || "User 2", action: "Updated fee structure for 'Class 10'", time: "1h ago", icon: <DollarSign className="h-4 w-4 text-blue-500" /> },
-  { id: "3", user: MOCK_USERS[3 % MOCK_USERS.length]?.name || "User 3", action: "Generated 'Attendance Report'", time: "3h ago", icon: <FileText className="h-4 w-4 text-yellow-500" /> },
-  { id: "4", user: MOCK_USERS[0 % MOCK_USERS.length]?.name || "User 0", action: "Changed branch settings for 'North Campus'", time: "5h ago", icon: <Settings className="h-4 w-4 text-purple-500" /> },
-  { id: "5", user: MOCK_USERS[1 % MOCK_USERS.length]?.name || "User 1", action: "Sent out 'Parent-Teacher Meeting' notification", time: "1d ago", icon: <Bell className="h-4 w-4 text-orange-500" /> },
+const placeholderRecentActivity = [
+  { id: "1", user: "System User", action: "Added new student 'Alice Wonderland'", time: "15m ago", icon: <UserPlus className="h-4 w-4 text-green-500" /> },
+  { id: "2", user: "Admin User", action: "Updated fee structure for 'Class 10'", time: "1h ago", icon: <DollarSign className="h-4 w-4 text-blue-500" /> },
+  { id: "3", user: "Staff User", action: "Generated 'Attendance Report'", time: "3h ago", icon: <FileText className="h-4 w-4 text-yellow-500" /> },
+  { id: "4", user: "System Admin", action: "Changed branch settings for 'Main Campus'", time: "5h ago", icon: <Settings className="h-4 w-4 text-purple-500" /> },
+  { id: "5", user: "System User", action: "Sent out 'Parent-Teacher Meeting' notification", time: "1d ago", icon: <Bell className="h-4 w-4 text-orange-500" /> },
 ];
 
 export default function DashboardPage() {
-  const { currentEffectiveUser } = useImpersonation();
-  const userRole = currentEffectiveUser.role;
+  const { currentEffectiveUser, isLoadingOriginalUser } = useImpersonation();
+  const [branches, setBranches] = React.useState<Branch[]>([]);
+  const [totalUsers, setTotalUsers] = React.useState(0);
+  const [isLoadingData, setIsLoadingData] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoadingData(true);
+      try {
+        const [fetchedBranches, fetchedUsers] = await Promise.all([
+          apiService.get<Branch[]>('/branches'),
+          apiService.get<User[]>('/users') 
+        ]);
+        setBranches(fetchedBranches);
+        setTotalUsers(fetchedUsers.length);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+        // Use placeholders or show error
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+    if (!isLoadingOriginalUser) { // Fetch data once original user context is settled
+        fetchData();
+    }
+  }, [isLoadingOriginalUser]);
+
+
+  if (isLoadingOriginalUser || isLoadingData || !currentEffectiveUser) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  const userRole = currentEffectiveUser.role.name;
+
 
   const kpis = [
-    { title: "Total Students", value: "1,250", icon: UsersRound, trend: "+5% MoM", color: "text-primary" },
-    { title: "Active Staff", value: MOCK_USERS.length.toString(), icon: Users, trend: "+2 this week", color: "text-green-600" },
-    { title: "Total Revenue", value: "$85,670", icon: DollarSign, trend: "+12% MoM", color: "text-purple-600" },
-    { title: "Open Enquiries", value: "78", icon: Activity, trend: "+10 today", color: "text-orange-600" },
+    { title: "Total Students", value: "1,250", icon: UsersRound, trend: "+5% MoM", color: "text-primary" }, // Placeholder
+    { title: "Active Staff", value: totalUsers.toString(), icon: Users, trend: "+2 this week", color: "text-green-600" },
+    { title: "Total Revenue", value: "$85,670", icon: DollarSign, trend: "+12% MoM", color: "text-purple-600" }, // Placeholder
+    { title: "Open Enquiries", value: "78", icon: Activity, trend: "+10 today", color: "text-orange-600" }, // Placeholder
   ];
+
+  const revenueData = branches.length > 0 ? branches.map((branch, index) => ({
+    name: branch.name,
+    revenue: Math.floor(Math.random() * 50000) + 20000, // Still mock revenue figures
+    fill: `hsl(var(--chart-${(index % 5) + 1}))`, // Cycle through 5 chart colors
+  })) : placeholderRevenueData;
+
 
   const chartConfig: any = { 
     newStudents: { label: "New Students", color: "hsl(var(--primary))" },
     revenue: { label: "Revenue" }
   };
-  MOCK_BRANCHES.forEach((branch, index) => {
-    chartConfig[branch.name] = { label: branch.name, color: `hsl(var(--chart-${index + 1}))` };
+  
+  revenueData.forEach((entry) => { // Use actual revenueData for config
+     if (!chartConfig[entry.name]) { // Check if already defined
+      chartConfig[entry.name] = { label: entry.name, color: entry.fill };
+    }
   });
 
 
@@ -70,8 +120,8 @@ export default function DashboardPage() {
           </Button>
           {userRole === "Super Admin" && (
             <Button size="sm" asChild>
-              <Link href="/users/new">
-                <UserPlus className="mr-2 h-4 w-4" /> Add New User
+              <Link href="/users"> {/* Changed from users/new to users list */}
+                <UserPlus className="mr-2 h-4 w-4" /> Manage Users
               </Link>
             </Button>
           )}
@@ -138,7 +188,7 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentActivity.map((activity) => (
+                    {placeholderRecentActivity.map((activity) => (
                       <TableRow key={activity.id} className="hover:bg-muted/50">
                         <TableCell>{activity.icon}</TableCell>
                         <TableCell className="font-medium">{activity.user}</TableCell>
@@ -201,7 +251,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button variant="outline" className="w-full" asChild><Link href="/students/new"><UserPlus className="mr-2 h-4 w-4" />Student</Link></Button>
-              <Button variant="outline" className="w-full" asChild><Link href="/staff/new"><Users className="mr-2 h-4 w-4" />Staff</Link></Button>
+              <Button variant="outline" className="w-full" asChild><Link href="/users"><Users className="mr-2 h-4 w-4" />Staff</Link></Button>
               <Button variant="outline" className="w-full" asChild><Link href="/classes"><BookOpen className="mr-2 h-4 w-4" />Classes</Link></Button>
               <Button variant="outline" className="w-full" asChild><Link href="/branch-settings"><Building className="mr-2 h-4 w-4" />Branch</Link></Button>
             </CardContent>
