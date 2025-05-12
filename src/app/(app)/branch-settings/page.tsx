@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -8,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MOCK_CLASSES } from "@/lib/constants";
-import { UploadCloud, X, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock current branch data
 const currentBranchData = {
@@ -31,10 +33,20 @@ export default function BranchSettingsPage() {
   const [logoPreview, setLogoPreview] = React.useState<string | null>(currentBranchData.logoUrl);
   const [selectedClasses, setSelectedClasses] = React.useState<string[]>(currentBranchData.classes);
   const [newClassName, setNewClassName] = React.useState("");
+  const [isSaving, setIsSaving] = React.useState(false);
+  const { toast } = useToast();
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 1 * 1024 * 1024) { // 1MB limit
+        toast({
+          title: "Upload Error",
+          description: "Logo file size should not exceed 1MB.",
+          variant: "destructive",
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
@@ -54,10 +66,20 @@ export default function BranchSettingsPage() {
     setSelectedClasses(selectedClasses.filter(c => c !== classNameToRemove));
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
     // In a real app, this would submit data to the backend
     console.log("Saving changes:", { branchName, address, phone, email, logoPreview, selectedClasses });
-    // Add toast notification for success
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    setIsSaving(false);
+    toast({
+      title: "Success!",
+      description: "Branch settings have been updated successfully.",
+      variant: "default",
+    });
   };
 
   return (
@@ -135,6 +157,7 @@ export default function BranchSettingsPage() {
                       value={newClassName} 
                       onChange={(e) => setNewClassName(e.target.value)} 
                       placeholder="e.g., Class 10 (Science)"
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddClass();}}}
                     />
                   </div>
                   <Button onClick={handleAddClass} type="button">Add Class</Button>
@@ -183,7 +206,7 @@ export default function BranchSettingsPage() {
                        </label>
                     </Button>
                     {logoPreview && (
-                      <Button variant="ghost" size="icon" onClick={() => setLogoPreview(null)}>
+                      <Button variant="ghost" size="icon" onClick={() => { setLogoPreview(null); (document.getElementById('logoUpload') as HTMLInputElement).value = '';}}>
                         <X className="h-4 w-4" />
                       </Button>
                     )}
@@ -193,11 +216,11 @@ export default function BranchSettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="primaryColor">Primary Color</Label>
-                    <Input id="primaryColor" type="color" defaultValue={currentBranchData.primaryColor} className="h-10" />
+                    <Input id="primaryColor" type="color" defaultValue={currentBranchData.primaryColor} className="h-10 p-1" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="secondaryColor">Secondary Color</Label>
-                    <Input id="secondaryColor" type="color" defaultValue={currentBranchData.secondaryColor} className="h-10" />
+                    <Input id="secondaryColor" type="color" defaultValue={currentBranchData.secondaryColor} className="h-10 p-1" />
                   </div>
                 </div>
               </CardContent>
@@ -206,8 +229,18 @@ export default function BranchSettingsPage() {
         </Tabs>
       </CardContent>
       <CardFooter className="border-t pt-6">
-        <Button onClick={handleSaveChanges} className="ml-auto shadow-md">Save Changes</Button>
+        <Button onClick={handleSaveChanges} className="ml-auto shadow-md" disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Changes"
+          )}
+        </Button>
       </CardFooter>
     </Card>
   );
 }
+
