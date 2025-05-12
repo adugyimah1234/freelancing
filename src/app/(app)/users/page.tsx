@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MOCK_USERS, MOCK_ROLES, MOCK_BRANCHES, MOCK_USER as LOGGED_IN_USER } from "@/lib/constants";
-import type { User, Role, Branch } from "@/types";
+import type { User } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Edit3, UserPlus, MoreHorizontal, Trash2, Power, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -38,6 +38,8 @@ const getInitials = (name: string) => {
   return names[0][0].toUpperCase() + names[names.length - 1][0].toUpperCase();
 };
 
+const ALL_BRANCHES_SELECT_VALUE = "__ALL_BRANCHES__";
+
 export default function UserManagementPage() {
   const [users, setUsers] = React.useState<User[]>(MOCK_USERS);
   const [isUserDialogOpen, setIsUserDialogOpen] = React.useState(false);
@@ -47,53 +49,57 @@ export default function UserManagementPage() {
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      role: "",
-      branchId: LOGGED_IN_USER.role !== "Super Admin" ? LOGGED_IN_USER.branchId : "",
-      status: "invited",
-    },
+    // Default values are set in useEffect when dialog opens
   });
 
   React.useEffect(() => {
-    if (editingUser) {
-      form.reset({
-        id: editingUser.id,
-        name: editingUser.name,
-        email: editingUser.email,
-        role: editingUser.role, // Assuming role name is stored; ideally roleId
-        branchId: editingUser.branchId,
-        status: editingUser.status,
-      });
-    } else {
-      form.reset({
-        name: "",
-        email: "",
-        role: "",
-        branchId: LOGGED_IN_USER.role !== "Super Admin" ? LOGGED_IN_USER.branchId : "",
-        status: "invited",
-      });
+    if (isUserDialogOpen) {
+      if (editingUser) {
+        form.reset({
+          id: editingUser.id,
+          name: editingUser.name,
+          email: editingUser.email,
+          role: editingUser.role,
+          branchId: (editingUser.branchId === undefined || editingUser.branchId === "") 
+                      ? ALL_BRANCHES_SELECT_VALUE 
+                      : editingUser.branchId,
+          status: editingUser.status,
+        });
+      } else { // New user
+        form.reset({
+          name: "",
+          email: "",
+          role: "",
+          branchId: LOGGED_IN_USER.role === "Super Admin" 
+                      ? ALL_BRANCHES_SELECT_VALUE 
+                      : (LOGGED_IN_USER.branchId || ""), // If branch admin has no branch, use "" (shows placeholder)
+          status: "invited",
+        });
+      }
     }
   }, [editingUser, form, isUserDialogOpen]);
 
-  const onSubmit = async (data: UserFormData) => {
+  const onSubmit = async (formData: UserFormData) => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
+
+    const processedData = { ...formData };
+    if (processedData.branchId === ALL_BRANCHES_SELECT_VALUE) {
+      processedData.branchId = undefined; 
+    }
 
     if (editingUser) {
-      setUsers(users.map(u => u.id === editingUser.id ? { ...editingUser, ...data, role: data.role } : u));
-      toast({ title: "User Updated", description: `${data.name}'s details have been updated.` });
+      setUsers(users.map(u => u.id === editingUser.id ? { ...editingUser, ...processedData } : u));
+      toast({ title: "User Updated", description: `${processedData.name}'s details have been updated.` });
     } else {
       const newUser: User = {
         id: `user_${Date.now()}`,
-        avatarUrl: `https://picsum.photos/seed/${data.name.split(" ").join("")}/100/100`,
-        lastLogin: data.status === 'active' ? new Date().toISOString() : undefined,
-        ...data,
-        role: data.role,
+        avatarUrl: `https://picsum.photos/seed/${processedData.name.split(" ").join("")}/100/100`,
+        lastLogin: processedData.status === 'active' ? new Date().toISOString() : undefined,
+        ...processedData,
       };
       setUsers([newUser, ...users]);
-      toast({ title: "User Created", description: `${data.name} has been invited/created.` });
+      toast({ title: "User Created", description: `${processedData.name} has been invited/created.` });
     }
     setIsLoading(false);
     setIsUserDialogOpen(false);
@@ -108,7 +114,6 @@ export default function UserManagementPage() {
   const handleDeleteUser = async (userId: string) => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
-     // Add confirmation dialog in real app
     setUsers(users.filter(u => u.id !== userId));
     setIsLoading(false);
     toast({ title: "User Deleted", description: "The user has been removed.", variant: "destructive" });
@@ -165,7 +170,7 @@ export default function UserManagementPage() {
                   <FormField control={form.control} name="role" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
                         <SelectContent>
                           {availableRoles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
@@ -179,12 +184,12 @@ export default function UserManagementPage() {
                       <FormLabel>Branch</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value || ""}
                         disabled={LOGGED_IN_USER.role !== "Super Admin" && !!LOGGED_IN_USER.branchId}
                       >
                         <FormControl><SelectTrigger><SelectValue placeholder="Select branch (optional)" /></SelectTrigger></FormControl>
                         <SelectContent>
-                          <SelectItem value="">All Branches (N/A)</SelectItem>
+                          <SelectItem value={ALL_BRANCHES_SELECT_VALUE}>All Branches (N/A)</SelectItem>
                           {MOCK_BRANCHES.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -196,7 +201,7 @@ export default function UserManagementPage() {
                   <FormField control={form.control} name="status" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                       <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="active">Active</SelectItem>
@@ -247,7 +252,7 @@ export default function UserManagementPage() {
                 <TableCell className="text-muted-foreground text-sm">{user.email}</TableCell>
                 <TableCell className="text-sm">{user.role}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {user.branchId ? MOCK_BRANCHES.find(b => b.id === user.branchId)?.name : 'All'}
+                  {user.branchId ? MOCK_BRANCHES.find(b => b.id === user.branchId)?.name : 'All Branches'}
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.status === "active" ? "default" : user.status === "invited" ? "secondary" : "outline"}
@@ -276,7 +281,7 @@ export default function UserManagementPage() {
                         <Power className="mr-2 h-4 w-4" /> 
                         {user.status === 'active' ? 'Deactivate' : 'Activate'}
                       </DropdownMenuItem>
-                       {LOGGED_IN_USER.role === "Super Admin" && user.id !== LOGGED_IN_USER.id && ( // Super admin can delete others
+                       {LOGGED_IN_USER.role === "Super Admin" && user.id !== LOGGED_IN_USER.id && ( 
                         <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                           <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
@@ -297,3 +302,4 @@ export default function UserManagementPage() {
     </Card>
   );
 }
+
