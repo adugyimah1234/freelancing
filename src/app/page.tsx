@@ -18,10 +18,10 @@ export default function HomePage() {
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Button asChild size="lg" className="shadow-md">
-            <Link href="/dashboard">Go to Dashboard</Link>
+            <Link href="/login">Login / Get Started</Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="shadow-md border-primary/50 hover:bg-primary/10 hover:text-primary">
-            <Link href="/learn-more">Learn More</Link>
+            <Link href="/login">Learn More</Link>
           </Button>
         </div>
       </div>
