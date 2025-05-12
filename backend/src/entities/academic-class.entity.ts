@@ -1,5 +1,5 @@
 
-import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Unique } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Unique, ManyToMany } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Branch } from './branch.entity';
 import { Student } from './student.entity';
