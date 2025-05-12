@@ -1,3 +1,4 @@
+
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -10,6 +11,10 @@ export const environment = {
   dbUsername: process.env.DB_USERNAME || 'root',
   dbPassword: process.env.DB_PASSWORD || '',
   dbDatabase: process.env.DB_DATABASE || 'branch_buddy',
-  jwtSecret: process.env.JWT_SECRET || 'your-super-secret-jwt-key',
+  jwtSecret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-please-change-this',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
+
+  // Super Admin Credentials for Seeding
+  superAdminEmail: process.env.SUPER_ADMIN_EMAIL || 'superadmin@branchbuddy.app',
+  superAdminPassword: process.env.SUPER_ADMIN_PASSWORD || 'SuperAdminP@ssw0rd!', // Ensure this is strong and changed
 };

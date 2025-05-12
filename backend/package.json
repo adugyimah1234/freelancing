@@ -1,3 +1,4 @@
+
 {
   "name": "branch-buddy-backend",
   "version": "0.0.1",
@@ -16,7 +17,8 @@
     "migration:run": "npm run typeorm migration:run",
     "migration:generate": "npm run typeorm migration:generate src/database/migrations/%npm_config_name%",
     "migration:create": "npm run typeorm migration:create src/database/migrations/%npm_config_name%",
-    "migration:revert": "npm run typeorm migration:revert"
+    "migration:revert": "npm run typeorm migration:revert",
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed.ts"
   },
   "dependencies": {
     "bcrypt": "^5.1.0",
