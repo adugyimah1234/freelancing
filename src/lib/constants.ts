@@ -12,6 +12,7 @@ export const MOCK_PERMISSIONS: Permission[] = [
   { id: "perm_fee_manage_structure", name: "Manage Fee Structure", category: "Fee Management" },
   // User Management
   { id: "perm_user_create", name: "Create Users", category: "User Management" },
+  { id: "perm_user_view", name: "View Users", category: "User Management" },
   { id: "perm_user_edit", name: "Edit Users", category: "User Management" },
   { id: "perm_user_assign_roles", name: "Assign Roles to Users", category: "User Management" },
   // Branch Management
@@ -37,7 +38,7 @@ export const MOCK_ROLES: Role[] = [
     permissions: [
       "perm_student_create", "perm_student_view", "perm_student_edit",
       "perm_fee_collect", "perm_fee_view_records",
-      "perm_user_create", "perm_user_edit", "perm_user_assign_roles", // Within their branch
+      "perm_user_create", "perm_user_view", "perm_user_edit", "perm_user_assign_roles", // Within their branch
       "perm_branch_config", // For their branch
       "perm_class_manage", "perm_exam_manage"
     ],
@@ -57,6 +58,13 @@ export const MOCK_ROLES: Role[] = [
     permissions: ["perm_fee_collect", "perm_fee_view_records", "perm_fee_manage_structure"],
     userCount: 2,
   },
+  {
+    id: "role_teacher",
+    name: "Teacher",
+    description: "Manages assigned classes and student progress.",
+    permissions: ["perm_student_view", "perm_exam_manage"], // Simplified
+    userCount: 10,
+  },
 ];
 
 export const MOCK_BRANCHES: Branch[] = [
@@ -65,13 +73,58 @@ export const MOCK_BRANCHES: Branch[] = [
   { id: "branch_downtown", name: "Downtown Branch" },
 ];
 
-export const MOCK_USER: User = {
-  id: "user_123",
-  name: "Admin User",
-  email: "admin@branchbuddy.app",
-  avatarUrl: "https://picsum.photos/seed/adminuser/100/100",
-  role: "Super Admin",
-};
+export const MOCK_USERS: User[] = [
+  {
+    id: "user_super_admin",
+    name: "Dr. Evelyn Reed",
+    email: "e.reed@branchbuddy.app",
+    avatarUrl: "https://picsum.photos/seed/evelyn/100/100",
+    role: "Super Admin",
+    status: "active",
+    lastLogin: new Date(Date.now() - Math.random() * 100000000).toISOString(),
+  },
+  {
+    id: "user_branch_admin_main",
+    name: "Marcus Chen",
+    email: "m.chen.main@branchbuddy.app",
+    avatarUrl: "https://picsum.photos/seed/marcus/100/100",
+    role: "Branch Admin",
+    status: "active",
+    branchId: "branch_main",
+    lastLogin: new Date(Date.now() - Math.random() * 100000000).toISOString(),
+  },
+  {
+    id: "user_front_desk_north",
+    name: "Aisha Khan",
+    email: "a.khan.north@branchbuddy.app",
+    avatarUrl: "https://picsum.photos/seed/aisha/100/100",
+    role: "Front Desk",
+    status: "active",
+    branchId: "branch_north",
+    lastLogin: new Date(Date.now() - Math.random() * 100000000).toISOString(),
+  },
+  {
+    id: "user_accountant_main",
+    name: "John B. Good",
+    email: "j.good.main@branchbuddy.app",
+    avatarUrl: "https://picsum.photos/seed/johngood/100/100",
+    role: "Accountant",
+    status: "invited",
+    branchId: "branch_main",
+  },
+   {
+    id: "user_teacher_downtown",
+    name: "Sarah Wilson",
+    email: "s.wilson.downtown@branchbuddy.app",
+    avatarUrl: "https://picsum.photos/seed/sarah/100/100",
+    role: "Teacher", 
+    status: "inactive",
+    branchId: "branch_downtown",
+    lastLogin: new Date(Date.now() - Math.random() * 300000000).toISOString(),
+  },
+];
+
+export const MOCK_USER: User = MOCK_USERS[0]; // Super Admin for current session
 
 export const MOCK_CLASSES: string[] = [
   "Nursery", "LKG", "UKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5",

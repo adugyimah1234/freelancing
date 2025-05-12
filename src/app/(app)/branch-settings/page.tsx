@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MOCK_CLASSES } from "@/lib/constants";
-import { UploadCloud, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { UploadCloud, X, Image as ImageIcon, Loader2, Palette } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,8 +21,8 @@ const currentBranchData = {
   email: "maincampus@branchbuddy.app",
   logoUrl: "https://picsum.photos/seed/maincampuslogo/200/100", // Placeholder
   classes: ["Nursery", "LKG", "UKG", "Class 1", "Class 2"],
-  primaryColor: "#3498db",
-  secondaryColor: "#ecf0f1",
+  primaryColor: "#3498db", // hsl(207, 70%, 53%)
+  secondaryColor: "#ecf0f1", // hsl(210, 17%, 96%)
 };
 
 export default function BranchSettingsPage() {
@@ -31,8 +31,12 @@ export default function BranchSettingsPage() {
   const [phone, setPhone] = React.useState(currentBranchData.phone);
   const [email, setEmail] = React.useState(currentBranchData.email);
   const [logoPreview, setLogoPreview] = React.useState<string | null>(currentBranchData.logoUrl);
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [selectedClasses, setSelectedClasses] = React.useState<string[]>(currentBranchData.classes);
   const [newClassName, setNewClassName] = React.useState("");
+  const [primaryColor, setPrimaryColor] = React.useState(currentBranchData.primaryColor);
+  const [secondaryColor, setSecondaryColor] = React.useState(currentBranchData.secondaryColor);
+
   const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
 
@@ -47,6 +51,7 @@ export default function BranchSettingsPage() {
         });
         return;
       }
+      setLogoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
@@ -59,6 +64,12 @@ export default function BranchSettingsPage() {
     if (newClassName && !selectedClasses.includes(newClassName)) {
       setSelectedClasses([...selectedClasses, newClassName]);
       setNewClassName("");
+    } else if (newClassName && selectedClasses.includes(newClassName)) {
+       toast({
+          title: "Class Exists",
+          description: `Class "${newClassName}" is already added.`,
+          variant: "default",
+        });
     }
   };
 
@@ -68,39 +79,39 @@ export default function BranchSettingsPage() {
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
-    // In a real app, this would submit data to the backend
-    console.log("Saving changes:", { branchName, address, phone, email, logoPreview, selectedClasses });
+    // In a real app, this would submit data to the backend, including logoFile if present
+    console.log("Saving changes:", { branchName, address, phone, email, logoFile, logoPreview, selectedClasses, primaryColor, secondaryColor });
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     setIsSaving(false);
     toast({
-      title: "Success!",
+      title: "Settings Saved!",
       description: "Branch settings have been updated successfully.",
       variant: "default",
     });
   };
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-xl w-full">
       <CardHeader>
         <CardTitle className="text-3xl">Branch Settings</CardTitle>
         <CardDescription>Configure settings specific to the current branch: {currentBranchData.name}.</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="classes">Classes</TabsTrigger>
-            <TabsTrigger value="branding">Branding</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6">
+            <TabsTrigger value="general">General Information</TabsTrigger>
+            <TabsTrigger value="classes">Class Management</TabsTrigger>
+            <TabsTrigger value="branding">Branding & Appearance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
-            <Card>
+            <Card className="border-0 sm:border shadow-none sm:shadow-sm">
               <CardHeader>
-                <CardTitle>General Information</CardTitle>
-                <CardDescription>Update basic details for this branch.</CardDescription>
+                <CardTitle className="text-xl">Basic Details</CardTitle>
+                <CardDescription>Update fundamental information for this branch.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -109,7 +120,7 @@ export default function BranchSettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
-                  <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full branch address" />
+                  <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full branch address" rows={3}/>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -126,32 +137,32 @@ export default function BranchSettingsPage() {
           </TabsContent>
 
           <TabsContent value="classes">
-            <Card>
+            <Card className="border-0 sm:border shadow-none sm:shadow-sm">
               <CardHeader>
-                <CardTitle>Class Management</CardTitle>
-                <CardDescription>Manage academic classes offered at this branch.</CardDescription>
+                <CardTitle className="text-xl">Class Configuration</CardTitle>
+                <CardDescription>Manage academic classes and sections offered at this branch.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <Label>Current Classes</Label>
+                  <Label className="text-base font-medium">Current Classes</Label>
                   {selectedClasses.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-2 mt-2 border p-3 rounded-md bg-muted/30">
                       {selectedClasses.map((cls) => (
-                        <div key={cls} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
+                        <div key={cls} className="flex items-center bg-primary/10 text-primary px-3 py-1.5 rounded-md text-sm font-medium border border-primary/30">
                           {cls}
-                          <Button variant="ghost" size="icon" className="h-5 w-5 ml-1" onClick={() => handleRemoveClass(cls)}>
-                            <X className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-5 w-5 ml-2 hover:bg-primary/20" onClick={() => handleRemoveClass(cls)}>
+                            <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground mt-2">No classes added yet.</p>
+                    <p className="text-sm text-muted-foreground mt-2 p-3 border rounded-md bg-muted/30">No classes added yet. Use the form below to add classes.</p>
                   )}
                 </div>
-                <div className="flex items-end gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4 pt-4 border-t">
                   <div className="flex-grow space-y-2">
-                    <Label htmlFor="newClassName">Add New Class</Label>
+                    <Label htmlFor="newClassName">Add New Class Name</Label>
                     <Input 
                       id="newClassName" 
                       value={newClassName} 
@@ -160,18 +171,19 @@ export default function BranchSettingsPage() {
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddClass();}}}
                     />
                   </div>
-                  <Button onClick={handleAddClass} type="button">Add Class</Button>
+                  <Button onClick={handleAddClass} type="button" className="w-full sm:w-auto">Add Class</Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Available Standard Classes (Suggestions)</Label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-2 pt-4 border-t">
+                  <Label className="text-base font-medium">Suggested Standard Classes</Label>
+                  <p className="text-sm text-muted-foreground">Quickly add common classes if they are not already in your list.</p>
+                  <div className="flex flex-wrap gap-2 pt-2">
                     {MOCK_CLASSES.filter(mc => !selectedClasses.includes(mc)).slice(0, 10).map(cls => (
                        <Button key={cls} variant="outline" size="sm" onClick={() => {
                          if (!selectedClasses.includes(cls)) {
                            setSelectedClasses([...selectedClasses, cls]);
                          }
                        }}>
-                         {cls}
+                         Add: {cls}
                        </Button>
                     ))}
                   </div>
@@ -181,46 +193,58 @@ export default function BranchSettingsPage() {
           </TabsContent>
 
           <TabsContent value="branding">
-            <Card>
+            <Card className="border-0 sm:border shadow-none sm:shadow-sm">
               <CardHeader>
-                <CardTitle>Logo & Branding</CardTitle>
-                <CardDescription>Customize the look and feel for this branch.</CardDescription>
+                <CardTitle className="text-xl flex items-center"><Palette className="mr-2 h-5 w-5 text-primary"/>Logo & Appearance</CardTitle>
+                <CardDescription>Customize the visual identity for this branch. Applied across portals and communications.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="logoUpload">Branch Logo</Label>
+              <CardContent className="space-y-8">
+                <div className="space-y-3">
+                  <Label htmlFor="logoUpload" className="text-base font-medium">Branch Logo</Label>
                   <div className="flex items-center gap-4">
                     {logoPreview ? (
-                      <div className="relative w-32 h-16 border rounded-md overflow-hidden bg-muted">
-                        <Image src={logoPreview} alt="Branch Logo Preview" layout="fill" objectFit="contain" data-ai-hint="school logo"/>
+                      <div className="relative w-40 h-20 border-2 border-dashed rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                        <Image src={logoPreview} alt="Branch Logo Preview" layout="fill" objectFit="contain" data-ai-hint="school logo" />
                       </div>
                     ) : (
-                       <div className="w-32 h-16 border rounded-md flex items-center justify-center bg-muted">
-                         <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                       <div className="w-40 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-muted text-muted-foreground">
+                         <ImageIcon className="h-8 w-8" />
+                         <span className="text-xs mt-1">No logo</span>
                        </div>
                     )}
-                    <Input id="logoUpload" type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
-                    <Button asChild variant="outline">
-                       <label htmlFor="logoUpload" className="cursor-pointer">
-                         <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
-                       </label>
-                    </Button>
-                    {logoPreview && (
-                      <Button variant="ghost" size="icon" onClick={() => { setLogoPreview(null); (document.getElementById('logoUpload') as HTMLInputElement).value = '';}}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <div className="flex flex-col gap-2">
+                        <Input id="logoUpload" type="file" accept="image/png, image/jpeg, image/svg+xml" onChange={handleLogoChange} className="hidden" />
+                        <Button asChild variant="outline" className="w-fit">
+                           <label htmlFor="logoUpload" className="cursor-pointer">
+                             <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                           </label>
+                        </Button>
+                        {logoPreview && (
+                          <Button variant="ghost" size="sm" onClick={() => { setLogoPreview(null); setLogoFile(null); (document.getElementById('logoUpload') as HTMLInputElement).value = '';}} className="text-destructive hover:text-destructive-foreground hover:bg-destructive/90 w-fit">
+                            <X className="mr-2 h-4 w-4" /> Remove Logo
+                          </Button>
+                        )}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">Recommended size: 200x100 pixels. Max file size: 1MB.</p>
+                  <p className="text-xs text-muted-foreground">Recommended: PNG/SVG, 200x100px. Max 1MB.</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t">
                   <div className="space-y-2">
-                    <Label htmlFor="primaryColor">Primary Color</Label>
-                    <Input id="primaryColor" type="color" defaultValue={currentBranchData.primaryColor} className="h-10 p-1" />
+                    <Label htmlFor="primaryColor">Primary Theme Color</Label>
+                    <div className="flex items-center gap-2">
+                        <Input id="primaryColor" type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-10 w-16 p-1 rounded-md" />
+                        <Input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="#RRGGBB" className="flex-1" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Used for main buttons, highlights, and active states.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="secondaryColor">Secondary Color</Label>
-                    <Input id="secondaryColor" type="color" defaultValue={currentBranchData.secondaryColor} className="h-10 p-1" />
+                    <Label htmlFor="secondaryColor">Secondary Theme Color</Label>
+                     <div className="flex items-center gap-2">
+                        <Input id="secondaryColor" type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-10 w-16 p-1 rounded-md" />
+                        <Input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} placeholder="#RRGGBB" className="flex-1" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Used for backgrounds, accents, and secondary elements.</p>
                   </div>
                 </div>
               </CardContent>
@@ -228,19 +252,18 @@ export default function BranchSettingsPage() {
           </TabsContent>
         </Tabs>
       </CardContent>
-      <CardFooter className="border-t pt-6">
-        <Button onClick={handleSaveChanges} className="ml-auto shadow-md" disabled={isSaving}>
+      <CardFooter className="border-t pt-6 mt-6">
+        <Button onClick={handleSaveChanges} className="ml-auto shadow-md text-base px-6 py-3" size="lg" disabled={isSaving}>
           {isSaving ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Saving Changes...
             </>
           ) : (
-            "Save Changes"
+            "Save All Settings"
           )}
         </Button>
       </CardFooter>
     </Card>
   );
 }
-

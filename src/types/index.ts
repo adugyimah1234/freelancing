@@ -34,4 +34,7 @@ export type User = {
   email: string;
   avatarUrl?: string;
   role: string; // Role Name
+  status: 'active' | 'invited' | 'inactive';
+  branchId?: string; // Optional, for users assigned to a specific branch
+  lastLogin?: string; // ISO date string, for display
 };
