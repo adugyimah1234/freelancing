@@ -9,7 +9,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:backend": "cd backend && npm run start:dev",
+    "build:backend": "cd backend && npm run build",
+    "start:backend": "cd backend && npm run start:prod"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",
