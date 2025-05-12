@@ -1,5 +1,6 @@
+
 import type { NavItem } from "@/types";
-import { LayoutDashboard, Users, Building, Settings2, UsersRound, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, Building, Settings2, UsersRound, ShieldCheck, BellRing } from "lucide-react";
 
 export const siteConfig = {
   name: "Branch Buddy",
@@ -18,18 +19,23 @@ export const siteConfig = {
     {
       title: "User Roles",
       href: "/user-roles",
-      icon: ShieldCheck, // Changed from Users to ShieldCheck for better distinction
+      icon: ShieldCheck,
     },
     {
       title: "Branch Settings",
       href: "/branch-settings",
       icon: Building,
     },
+    {
+      title: "Notifications",
+      href: "/notifications",
+      icon: BellRing,
+    }
     // Example for future system-wide settings
     // {
     //   title: "System Settings",
     //   href: "/system-settings",
-    //   icon: Settings2,
+    //   icon: Settings2, // Assuming Settings2 is available or replaced with Settings
     // },
   ] satisfies NavItem[],
 };

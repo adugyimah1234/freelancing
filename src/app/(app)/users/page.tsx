@@ -11,28 +11,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MOCK_USERS, MOCK_ROLES, MOCK_BRANCHES, MOCK_USER as LOGGED_IN_USER } from "@/lib/constants";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { MOCK_USERS, MOCK_ROLES, MOCK_BRANCHES } from "@/lib/constants";
 import type { User } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Edit3, UserPlus, MoreHorizontal, Trash2, Power, Loader2 } from "lucide-react";
+import { Edit3, UserPlus, MoreHorizontal, Trash2, Power, Loader2, Eye } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useImpersonation } from "@/context/impersonation-context";
 
 const userFormSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(3, "Full name must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
   role: z.string().min(1, "Role is required"),
-  branchId: z.string().optional(),
+  branchId: z.string().optional(), // Keep optional, empty string will be converted to ALL_BRANCHES_SELECT_VALUE
   status: z.enum(["active", "inactive", "invited"]).default("invited"),
 });
 
 type UserFormData = z.infer<typeof userFormSchema>;
 
 const getInitials = (name: string) => {
+  if (!name) return "..";
   const names = name.split(' ');
   if (names.length === 1) return names[0].substring(0, 2).toUpperCase();
   return names[0][0].toUpperCase() + names[names.length - 1][0].toUpperCase();
@@ -46,10 +48,14 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
+  
+  const { originalUser, currentEffectiveUser, startImpersonation, isImpersonating } = useImpersonation();
+  // Use originalUser for permission checks related to modifying user data
+  const adminUserForPermissions = originalUser;
+
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
-    // Default values are set in useEffect when dialog opens
   });
 
   React.useEffect(() => {
@@ -60,24 +66,22 @@ export default function UserManagementPage() {
           name: editingUser.name,
           email: editingUser.email,
           role: editingUser.role,
-          branchId: (editingUser.branchId === undefined || editingUser.branchId === "") 
-                      ? ALL_BRANCHES_SELECT_VALUE 
-                      : editingUser.branchId,
+          branchId: editingUser.branchId || ALL_BRANCHES_SELECT_VALUE,
           status: editingUser.status,
         });
-      } else { // New user
+      } else { 
         form.reset({
           name: "",
           email: "",
           role: "",
-          branchId: LOGGED_IN_USER.role === "Super Admin" 
+          branchId: adminUserForPermissions.role === "Super Admin" 
                       ? ALL_BRANCHES_SELECT_VALUE 
-                      : (LOGGED_IN_USER.branchId || ""), // If branch admin has no branch, use "" (shows placeholder)
+                      : (adminUserForPermissions.branchId || ALL_BRANCHES_SELECT_VALUE),
           status: "invited",
         });
       }
     }
-  }, [editingUser, form, isUserDialogOpen]);
+  }, [editingUser, form, isUserDialogOpen, adminUserForPermissions]);
 
   const onSubmit = async (formData: UserFormData) => {
     setIsLoading(true);
@@ -128,102 +132,106 @@ export default function UserManagementPage() {
     toast({ title: "Status Updated", description: `${user.name}'s status changed to ${newStatus}.` });
   };
 
-  const availableRoles = MOCK_ROLES.filter(role => LOGGED_IN_USER.role === "Super Admin" || role.name !== "Super Admin");
+  const availableRoles = MOCK_ROLES.filter(role => adminUserForPermissions.role === "Super Admin" || role.name !== "Super Admin");
 
   return (
     <Card className="shadow-xl w-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-3xl">User Management</CardTitle>
-          <CardDescription>View, create, and manage user accounts and their credentials.</CardDescription>
+          <CardDescription>View, create, and manage user accounts. {isImpersonating ? `(Currently viewing as ${currentEffectiveUser.name})` : `(Logged in as ${adminUserForPermissions.name})`}</CardDescription>
         </div>
-        <Dialog open={isUserDialogOpen} onOpenChange={(open) => { setIsUserDialogOpen(open); if (!open) setEditingUser(null); }}>
-          <DialogTrigger asChild>
-            <Button size="sm" onClick={() => { setEditingUser(null); setIsUserDialogOpen(true); }}>
-              <UserPlus className="mr-2 h-4 w-4" /> Add New User
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
-              <DialogDescription>
-                {editingUser ? `Modify details for ${editingUser.name}.` : "Enter details to create/invite a new user."}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl><Input placeholder="e.g., John Doe" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="role" render={({ field }) => (
+        {/* "Add New User" button visibility should be based on the original user's permissions if SA, or currentEffectiveUser's permissions if impersonating a non-SA */}
+        {/* For this exercise, we'll base it on originalUser's (Super Admin's) ability to create users always. */}
+        {adminUserForPermissions.role === "Super Admin" && (
+          <Dialog open={isUserDialogOpen} onOpenChange={(open) => { setIsUserDialogOpen(open); if (!open) setEditingUser(null); }}>
+            <DialogTrigger asChild>
+              <Button size="sm" onClick={() => { setEditingUser(null); setIsUserDialogOpen(true); }}>
+                <UserPlus className="mr-2 h-4 w-4" /> Add New User
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
+                <DialogDescription>
+                  {editingUser ? `Modify details for ${editingUser.name}.` : "Enter details to create/invite a new user."}
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                  <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {availableRoles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl><Input placeholder="e.g., John Doe" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="branchId" render={({ field }) => (
+                  <FormField control={form.control} name="email" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Branch</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value || ""}
-                        disabled={LOGGED_IN_USER.role !== "Super Admin" && !!LOGGED_IN_USER.branchId}
-                      >
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select branch (optional)" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value={ALL_BRANCHES_SELECT_VALUE}>All Branches (N/A)</SelectItem>
-                          {MOCK_BRANCHES.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                </div>
-                 {editingUser && (
-                  <FormField control={form.control} name="status" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                       <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                           <SelectItem value="invited">Invited</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                )}
-                <DialogFooter className="pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsUserDialogOpen(false)} disabled={isLoading}>Cancel</Button>
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingUser ? "Save Changes" : "Create User"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="role" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Role</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {availableRoles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="branchId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Branch</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value || ALL_BRANCHES_SELECT_VALUE}
+                          disabled={adminUserForPermissions.role !== "Super Admin" && !!adminUserForPermissions.branchId}
+                        >
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select branch (optional)" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value={ALL_BRANCHES_SELECT_VALUE}>All Branches (N/A)</SelectItem>
+                            {MOCK_BRANCHES.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  {editingUser && (
+                    <FormField control={form.control} name="status" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="invited">Invited</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  )}
+                  <DialogFooter className="pt-4">
+                    <Button type="button" variant="outline" onClick={() => setIsUserDialogOpen(false)} disabled={isLoading}>Cancel</Button>
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingUser ? "Save Changes" : "Create User"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
       </CardHeader>
       <CardContent>
         <Table>
@@ -268,21 +276,27 @@ export default function UserManagementPage() {
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isLoading}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isLoading && !isImpersonating}>
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">User Actions</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(user)}>
+                      {adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && !isImpersonating && (
+                        <DropdownMenuItem onClick={() => startImpersonation(user)}>
+                          <Eye className="mr-2 h-4 w-4" /> View As User
+                        </DropdownMenuItem>
+                      )}
+                       {(adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && !isImpersonating) && <DropdownMenuSeparator />}
+                      <DropdownMenuItem onClick={() => handleEdit(user)} disabled={isLoading && isImpersonating}>
                         <Edit3 className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
+                      <DropdownMenuItem onClick={() => handleToggleStatus(user)} disabled={isLoading && isImpersonating}>
                         <Power className="mr-2 h-4 w-4" /> 
                         {user.status === 'active' ? 'Deactivate' : 'Activate'}
                       </DropdownMenuItem>
-                       {LOGGED_IN_USER.role === "Super Admin" && user.id !== LOGGED_IN_USER.id && ( 
-                        <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                       {adminUserForPermissions.role === "Super Admin" && user.id !== adminUserForPermissions.id && ( 
+                        <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={isLoading && isImpersonating}>
                           <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                        )}
@@ -302,4 +316,3 @@ export default function UserManagementPage() {
     </Card>
   );
 }
-

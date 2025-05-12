@@ -4,11 +4,12 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MOCK_USER, MOCK_USERS, MOCK_BRANCHES } from "@/lib/constants";
+import { MOCK_USERS, MOCK_BRANCHES } from "@/lib/constants"; // MOCK_USER removed, using context
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, PieChart as RechartsPieChart, Bar, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltipComponent, Legend as RechartsLegendComponent, ResponsiveContainer } from "recharts";
-import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette, Settings2 } from "lucide-react";
+import { DollarSign, Users, Building, Activity, TrendingUp, UserPlus, FileText, Bell, UsersRound, BookOpen, AlertCircle, Palette, Settings } from "lucide-react"; // Settings2 changed to Settings
 import Link from "next/link";
+import { useImpersonation } from "@/context/impersonation-context";
 
 // Mock data for charts
 const enrollmentData = [
@@ -29,15 +30,16 @@ const revenueData = MOCK_BRANCHES.map((branch, index) => ({
 
 
 const recentActivity = [
-  { id: "1", user: MOCK_USERS[1 % MOCK_USERS.length].name, action: "Added new student 'Alice Wonderland'", time: "15m ago", icon: <UserPlus className="h-4 w-4 text-green-500" /> },
-  { id: "2", user: MOCK_USERS[2 % MOCK_USERS.length].name, action: "Updated fee structure for 'Class 10'", time: "1h ago", icon: <DollarSign className="h-4 w-4 text-blue-500" /> },
-  { id: "3", user: MOCK_USERS[3 % MOCK_USERS.length].name, action: "Generated 'Attendance Report'", time: "3h ago", icon: <FileText className="h-4 w-4 text-yellow-500" /> },
-  { id: "4", user: MOCK_USERS[0 % MOCK_USERS.length].name, action: "Changed branch settings for 'North Campus'", time: "5h ago", icon: <Settings2 className="h-4 w-4 text-purple-500" /> },
-  { id: "5", user: MOCK_USERS[1 % MOCK_USERS.length].name, action: "Sent out 'Parent-Teacher Meeting' notification", time: "1d ago", icon: <Bell className="h-4 w-4 text-orange-500" /> },
+  { id: "1", user: MOCK_USERS[1 % MOCK_USERS.length]?.name || "User 1", action: "Added new student 'Alice Wonderland'", time: "15m ago", icon: <UserPlus className="h-4 w-4 text-green-500" /> },
+  { id: "2", user: MOCK_USERS[2 % MOCK_USERS.length]?.name || "User 2", action: "Updated fee structure for 'Class 10'", time: "1h ago", icon: <DollarSign className="h-4 w-4 text-blue-500" /> },
+  { id: "3", user: MOCK_USERS[3 % MOCK_USERS.length]?.name || "User 3", action: "Generated 'Attendance Report'", time: "3h ago", icon: <FileText className="h-4 w-4 text-yellow-500" /> },
+  { id: "4", user: MOCK_USERS[0 % MOCK_USERS.length]?.name || "User 0", action: "Changed branch settings for 'North Campus'", time: "5h ago", icon: <Settings className="h-4 w-4 text-purple-500" /> },
+  { id: "5", user: MOCK_USERS[1 % MOCK_USERS.length]?.name || "User 1", action: "Sent out 'Parent-Teacher Meeting' notification", time: "1d ago", icon: <Bell className="h-4 w-4 text-orange-500" /> },
 ];
 
 export default function DashboardPage() {
-  const userRole = MOCK_USER.role;
+  const { currentEffectiveUser } = useImpersonation();
+  const userRole = currentEffectiveUser.role;
 
   const kpis = [
     { title: "Total Students", value: "1,250", icon: UsersRound, trend: "+5% MoM", color: "text-blue-500", bgColor: "bg-blue-50" },
@@ -46,7 +48,7 @@ export default function DashboardPage() {
     { title: "Open Enquiries", value: "78", icon: Activity, trend: "+10 today", color: "text-orange-500", bgColor: "bg-orange-50" },
   ];
 
-  const chartConfig = {
+  const chartConfig: any = { // Using any for chartConfig for simplicity with dynamic keys
     newStudents: { label: "New Students", color: "hsl(var(--chart-1))" },
     revenue: { label: "Revenue" }
   };
@@ -60,12 +62,13 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {MOCK_USER.name}! ({userRole})</p>
+          <p className="text-muted-foreground">Welcome back, {currentEffectiveUser.name}! ({userRole})</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm">
             <TrendingUp className="mr-2 h-4 w-4" /> View Reports
           </Button>
+          {/* Button visibility based on currentEffectiveUser's role/permissions */}
           {userRole === "Super Admin" && (
             <Button size="sm" asChild>
               <Link href="/users/new">
@@ -151,6 +154,7 @@ export default function DashboardPage() {
 
         {/* Right Column (Smaller) */}
         <div className="space-y-6">
+          {/* Revenue by branch chart visibility based on currentEffectiveUser's role */}
           {userRole === "Super Admin" && (
             <Card className="shadow-lg">
               <CardHeader>
@@ -196,10 +200,11 @@ export default function DashboardPage() {
               <CardDescription>Common tasks at your fingertips.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2">
+              {/* Quick Actions could also be permission-based */}
               <Button variant="outline" className="w-full" asChild><Link href="/students/new"><UserPlus className="mr-2 h-4 w-4" />Student</Link></Button>
               <Button variant="outline" className="w-full" asChild><Link href="/staff/new"><Users className="mr-2 h-4 w-4" />Staff</Link></Button>
               <Button variant="outline" className="w-full" asChild><Link href="/classes"><BookOpen className="mr-2 h-4 w-4" />Classes</Link></Button>
-              <Button variant="outline" className="w-full" asChild><Link href="/settings/branch"><Building className="mr-2 h-4 w-4" />Branch</Link></Button>
+              <Button variant="outline" className="w-full" asChild><Link href="/branch-settings"><Building className="mr-2 h-4 w-4" />Branch</Link></Button>
             </CardContent>
           </Card>
 
@@ -220,4 +225,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
